@@ -18,3 +18,5 @@ app.use("/auth", authRoutes);
 app.listen(3300, () => {
   console.log("Server running");
 });
+
+global.challengeStore = new Map();

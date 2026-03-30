@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api } from "../api/api";
 import { useAuth } from "../auth/useAuth";
 import "./Login.css";
+import { loginWithPasskey } from "../common/webauthn";
 
 export default function Login() {
   const { fetchMe, user } = useAuth();
@@ -52,6 +53,9 @@ export default function Login() {
           />
         </div>
 
+        <button type="button" onClick={() => loginWithPasskey(username)}>
+          Sign In with Passkey
+        </button>
         <button type="submit">Sign In</button>
       </form>
     </div>

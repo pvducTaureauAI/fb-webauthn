@@ -7,3 +7,15 @@ docker run -d \
   -e MYSQL_PASSWORD=123456 \
   -v mysql_data:/var/lib/mysql \
   mysql:8
+
+CREATE TABLE webauthn_credentials (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+
+  credential_id VARCHAR(255) NOT NULL,
+  public_key TEXT NOT NULL,
+  counter INT NOT NULL,
+
+  transports VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

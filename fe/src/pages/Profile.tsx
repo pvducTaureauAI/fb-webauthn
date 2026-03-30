@@ -1,5 +1,6 @@
 import { api } from "../api/api";
 import { useAuth } from "../auth/useAuth";
+import { registerPasskey } from "../common/webauthn";
 import "./Profile.css";
 
 export default function Profile() {
@@ -37,6 +38,7 @@ export default function Profile() {
             </span>
           </div>
         </div>
+        <button onClick={registerPasskey}>Enable Passkey</button>
 
         <button className="logout-button" onClick={handleLogout}>
           Sign Out
