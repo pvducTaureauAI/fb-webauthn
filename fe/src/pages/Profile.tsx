@@ -31,9 +31,9 @@ export default function Profile() {
             <span className="profile-info-value">{user.username}</span>
           </div>
           <div className="profile-info-item">
-            <span className="profile-info-label">Expired Time</span>
+            <span className="profile-info-label">Created At</span>
             <span className="profile-info-value">
-              {new Date(user.exp * 1000).toLocaleString()}
+              {new Date(user.created_at).toLocaleString()}
             </span>
           </div>
         </div>

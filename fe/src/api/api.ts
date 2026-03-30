@@ -1,5 +1,5 @@
 export async function api(url: string, options: RequestInit = {}) {
-  const res = await fetch("http://localhost:3300" + url, {
+  const res = await fetch("/api" + url, {
     ...options,
     credentials: "include",
     headers: {
