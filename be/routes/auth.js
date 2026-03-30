@@ -133,9 +133,11 @@ router.get("/webauthn/login/options", async (req, res) => {
       rpID: "localhost",
       allowCredentials: userPasskeys.map((passkey) => ({
         id: passkey.credentialID.toString("base64url"),
+        type: "public-key",
       })),
       userVerification: "preferred",
     });
+    console.log("Generated login options:", options);
 
     global.challengeStore.set(String(user.id), options.challenge);
 
@@ -149,19 +151,23 @@ router.get("/webauthn/login/options", async (req, res) => {
 const verifyLogin = async (req, res) => {
   try {
     const { username, ...body } = req.body;
+    console.log("Login verify request for username:", username);
     const [rows] = await db.execute("SELECT * FROM users WHERE username=?", [
       username,
     ]);
     const user = rows[0];
-
+    console.log("Login verify request for user:", user);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
     const currentChallenge = global.challengeStore.get(String(user.id));
+    console.log("Current challenge for user:", currentChallenge);
     if (!currentChallenge) {
       return res.status(400).json({ message: "No challenge found" });
     }
     const passkeys = await getUserPasskeys(user.id);
+    console.log("User passkeys:", passkeys);
+
     if (!passkeys || passkeys.length === 0) {
       return res.status(400).json({ message: "No passkey registered" });
     }
@@ -176,7 +182,10 @@ const verifyLogin = async (req, res) => {
         publicKey: passkeys[0].publicKey,
         counter: passkeys[0].counter,
       },
+
+      requireUserVerification: false,
     });
+    console.log("Login verification result:", verification);
 
     if (verification.verified) {
       const token = jwt.sign(

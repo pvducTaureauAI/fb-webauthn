@@ -21,11 +21,15 @@ export const loginWithPasskey = async (username: string) => {
   const options = await api(
     "/auth/webauthn/login/options?username=" + encodeURIComponent(username),
   );
-  const assertionResp = await startAuthentication(options);
+  console.log("Login options:", options);
+  const assertionResp = await startAuthentication({
+    optionsJSON: options,
+  });
+  console.log("Assertion response:", assertionResp);
 
   await api("/auth/webauthn/login/verify", {
     method: "POST",
-    body: JSON.stringify(assertionResp),
+    body: JSON.stringify({ ...assertionResp, username }),
   });
 
   alert("Passkey login successful!");
