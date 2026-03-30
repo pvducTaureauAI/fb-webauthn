@@ -1,9 +1,12 @@
+import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.js";
-import dotenv from "dotenv";
 
-dotenv.config();
+console.log("ENV CHECK:", {
+  DB_USER: process.env.DB_USER,
+  DB_PASS: process.env.DB_PASS,
+});
 
 const app = express();
 
