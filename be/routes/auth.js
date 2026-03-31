@@ -12,6 +12,8 @@ import {
 
 const router = express.Router();
 
+let PasskeyCredential = [];
+
 const getUserById = async (id) => {
   const [rows] = await db.execute("SELECT * FROM users WHERE id=?", [id]);
 
@@ -19,14 +21,16 @@ const getUserById = async (id) => {
 };
 
 const getUserPasskeys = async (userId) => {
-  const [rows] = await db.execute(
-    "SELECT * FROM webauthn_credentials WHERE user_id=?",
-    [userId],
-  );
+  // const [rows] = await db.execute(
+  //   "SELECT * FROM webauthn_credentials WHERE user_id=?",
+  //   [userId],
+  // );
+
+  const rows = PasskeyCredential.filter((pk) => pk.user_id === userId);
 
   return rows.map((row) => ({
-    credentialID: Buffer.from(row.credential_id, "base64"),
-    publicKey: Buffer.from(row.public_key, "base64"),
+    credential_id: row.credential_id,
+    public_key: row.public_key,
     counter: row.counter,
   }));
 };
@@ -44,14 +48,15 @@ router.get("/webauthn/register/options", auth, async (req, res) => {
     userName: user.username,
     attestationType: "none",
     excludeCredentials: userPasskeys.map((pk) => ({
-      id: pk.credentialID,
+      id: pk.credential_id,
       type: "public-key",
     })),
     authenticatorSelection: {
-      residentKey: "preferred",
+      residentKey: "discouraged",
       userVerification: "preferred",
       authenticatorAttachment: "platform",
     },
+    supportedAlgorithmIDs: [-7, -257],
   });
 
   global.challengeStore.set(String(user.id), options.challenge);
@@ -70,8 +75,6 @@ router.post("/webauthn/register/verify", auth, async (req, res) => {
     if (!currentChallenge) {
       return res.status(400).json({ message: "No challenge found" });
     }
-    console.log("Current challenge:", currentChallenge);
-    console.log("Request body:", req.body);
     const verification = await verifyRegistrationResponse({
       response: req.body,
       expectedChallenge: currentChallenge,
@@ -84,15 +87,23 @@ router.post("/webauthn/register/verify", auth, async (req, res) => {
 
     if (verification.verified) {
       const { registrationInfo } = verification;
-      await db.execute(
-        "INSERT INTO webauthn_credentials (user_id, credential_id, public_key, counter) VALUES (?, ?, ?, ?)",
-        [
-          user.id,
-          registrationInfo.credential.id.toString("base64"),
-          registrationInfo.credential.publicKey.toString("base64"),
-          registrationInfo.credential.counter,
-        ],
-      );
+      // await db.execute(
+      //   "INSERT INTO webauthn_credentials (user_id, credential_id, public_key, counter) VALUES (?, ?, ?, ?)",
+      //   [
+      //     user.id,
+      //     registrationInfo.credential.id,
+      //     registrationInfo.credential.publicKey.toString("base64url"),
+      //     registrationInfo.credential.counter,
+      //   ],
+      // );
+
+      PasskeyCredential.push({
+        user_id: user.id,
+        credential_id: registrationInfo.credential.id,
+        public_key: registrationInfo.credential.publicKey,
+        counter: registrationInfo.credential.counter,
+      });
+
       res.json({ message: "Passkey registered" });
     } else {
       res.status(400).json({ message: "Verification failed" });
@@ -132,7 +143,7 @@ router.get("/webauthn/login/options", async (req, res) => {
     const options = await generateAuthenticationOptions({
       rpID: "localhost",
       allowCredentials: userPasskeys.map((passkey) => ({
-        id: passkey.credentialID.toString("base64url"),
+        id: passkey.credential_id,
         type: "public-key",
       })),
       userVerification: "preferred",
@@ -172,17 +183,20 @@ const verifyLogin = async (req, res) => {
       return res.status(400).json({ message: "No passkey registered" });
     }
 
+    const credentialID = passkeys[0].credential_id;
+    const publicKey = passkeys[0].public_key;
+    const counter = passkeys[0].counter;
+
     const verification = await verifyAuthenticationResponse({
       response: body,
       expectedChallenge: currentChallenge,
       expectedOrigin: "http://localhost:3301",
       expectedRPID: "localhost",
       credential: {
-        id: passkeys[0].credentialID.toString("base64url"),
-        publicKey: passkeys[0].publicKey,
-        counter: passkeys[0].counter,
+        id: credentialID,
+        publicKey: publicKey,
+        counter: counter,
       },
-
       requireUserVerification: false,
     });
     console.log("Login verification result:", verification);

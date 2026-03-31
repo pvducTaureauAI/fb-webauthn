@@ -53,7 +53,17 @@ export default function Login() {
           />
         </div>
 
-        <button type="button" onClick={() => loginWithPasskey(username)}>
+        <button
+          type="button"
+          onClick={async () => {
+            try {
+              await loginWithPasskey(username);
+              await fetchMe();
+            } catch (error) {
+              console.error("Passkey login error:", error);
+            }
+          }}
+        >
           Sign In with Passkey
         </button>
         <button type="submit">Sign In</button>
