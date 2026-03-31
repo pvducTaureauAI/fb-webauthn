@@ -12,8 +12,6 @@ import {
 
 const router = express.Router();
 
-let PasskeyCredential = [];
-
 const getUserById = async (id) => {
   const [rows] = await db.execute("SELECT * FROM users WHERE id=?", [id]);
 
@@ -21,12 +19,10 @@ const getUserById = async (id) => {
 };
 
 const getUserPasskeys = async (userId) => {
-  // const [rows] = await db.execute(
-  //   "SELECT * FROM webauthn_credentials WHERE user_id=?",
-  //   [userId],
-  // );
-
-  const rows = PasskeyCredential.filter((pk) => pk.user_id === userId);
+  const [rows] = await db.execute(
+    "SELECT * FROM webauthn_credentials WHERE user_id=?",
+    [userId],
+  );
 
   return rows.map((row) => ({
     credential_id: row.credential_id,
@@ -83,26 +79,20 @@ router.post("/webauthn/register/verify", auth, async (req, res) => {
 
       requireUserVerification: false,
     });
-    console.log("Verification result:", verification);
 
     if (verification.verified) {
       const { registrationInfo } = verification;
-      // await db.execute(
-      //   "INSERT INTO webauthn_credentials (user_id, credential_id, public_key, counter) VALUES (?, ?, ?, ?)",
-      //   [
-      //     user.id,
-      //     registrationInfo.credential.id,
-      //     registrationInfo.credential.publicKey.toString("base64url"),
-      //     registrationInfo.credential.counter,
-      //   ],
-      // );
-
-      PasskeyCredential.push({
-        user_id: user.id,
-        credential_id: registrationInfo.credential.id,
-        public_key: registrationInfo.credential.publicKey,
-        counter: registrationInfo.credential.counter,
-      });
+      await db.execute(
+        "INSERT INTO webauthn_credentials (user_id, credential_id, public_key, counter) VALUES (?, ?, ?, ?)",
+        [
+          user.id,
+          registrationInfo.credential.id,
+          Buffer.from(registrationInfo.credential.publicKey).toString(
+            "base64url",
+          ),
+          registrationInfo.credential.counter,
+        ],
+      );
 
       res.json({ message: "Passkey registered" });
     } else {
@@ -116,7 +106,6 @@ router.post("/webauthn/register/verify", auth, async (req, res) => {
 
 router.get("/webauthn/login/options", async (req, res) => {
   const { username } = req.query;
-  console.log("Login options request for username:", username);
   if (!username) {
     return res.status(400).json({ message: "Username required" });
   }
@@ -126,14 +115,12 @@ router.get("/webauthn/login/options", async (req, res) => {
   ]);
 
   const user = rows[0];
-  console.log("Login options request for user:", user);
 
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
 
   const userPasskeys = await getUserPasskeys(user.id);
-  console.log("User passkeys:", userPasskeys);
 
   if (userPasskeys.length === 0) {
     return res.status(400).json({ message: "No passkeys registered" });
@@ -148,7 +135,6 @@ router.get("/webauthn/login/options", async (req, res) => {
       })),
       userVerification: "preferred",
     });
-    console.log("Generated login options:", options);
 
     global.challengeStore.set(String(user.id), options.challenge);
 
@@ -162,30 +148,28 @@ router.get("/webauthn/login/options", async (req, res) => {
 const verifyLogin = async (req, res) => {
   try {
     const { username, ...body } = req.body;
-    console.log("Login verify request for username:", username);
     const [rows] = await db.execute("SELECT * FROM users WHERE username=?", [
       username,
     ]);
     const user = rows[0];
-    console.log("Login verify request for user:", user);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
     const currentChallenge = global.challengeStore.get(String(user.id));
-    console.log("Current challenge for user:", currentChallenge);
     if (!currentChallenge) {
       return res.status(400).json({ message: "No challenge found" });
     }
     const passkeys = await getUserPasskeys(user.id);
-    console.log("User passkeys:", passkeys);
 
     if (!passkeys || passkeys.length === 0) {
       return res.status(400).json({ message: "No passkey registered" });
     }
 
     const credentialID = passkeys[0].credential_id;
-    const publicKey = passkeys[0].public_key;
     const counter = passkeys[0].counter;
+    const publicKey = passkeys[0].public_key;
+    const decodedPublicKey = Buffer.from(publicKey, "base64url");
+    const toArray = new Uint8Array(decodedPublicKey);
 
     const verification = await verifyAuthenticationResponse({
       response: body,
@@ -194,12 +178,11 @@ const verifyLogin = async (req, res) => {
       expectedRPID: "localhost",
       credential: {
         id: credentialID,
-        publicKey: publicKey,
+        publicKey: toArray,
         counter: counter,
       },
       requireUserVerification: false,
     });
-    console.log("Login verification result:", verification);
 
     if (verification.verified) {
       const token = jwt.sign(
@@ -228,7 +211,6 @@ router.post("/webauthn/login/verify", verifyLogin);
 
 router.post("/register", async (req, res) => {
   const { username, password } = req.body;
-  console.log("Register request received", req.body);
 
   const hash = await bcrypt.hash(password, 10);
 
@@ -241,7 +223,6 @@ router.post("/register", async (req, res) => {
     res.json({ message: "User created" });
   } catch (err) {
     if (err.code === "ER_DUP_ENTRY") {
-      console.log("Username already exists:", username);
       return res.status(400).json({ message: "Username exists" });
     }
 
