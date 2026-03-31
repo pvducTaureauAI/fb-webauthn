@@ -5,16 +5,21 @@ import {
 import { api } from "../api/api";
 
 export async function registerPasskey() {
-  const options = await api("/auth/webauthn/register/options");
+  try {
+    const options = await api("/auth/webauthn/register/options");
 
-  const attResp = await startRegistration(options);
+    const attResp = await startRegistration(options);
 
-  await api("/auth/webauthn/register/verify", {
-    method: "POST",
-    body: JSON.stringify(attResp),
-  });
+    await api("/auth/webauthn/register/verify", {
+      method: "POST",
+      body: JSON.stringify(attResp),
+    });
 
-  alert("Passkey registered!");
+    alert("Passkey registered!");
+  } catch (error: any) {
+    console.error("Passkey registration error:", error);
+    alert(error?.message || "Passkey registration failed");
+  }
 }
 
 export const loginWithPasskey = async (username: string) => {

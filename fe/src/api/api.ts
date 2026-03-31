@@ -7,10 +7,8 @@ export async function api(url: string, options: RequestInit = {}) {
       ...(options.headers || {}),
     },
   });
-  console.log("API response:", res);
   if (!res.ok) {
     const errorData = await res.json();
-    console.error("API error data:", errorData);
     throw new Error(errorData?.message || "API error");
   }
 
