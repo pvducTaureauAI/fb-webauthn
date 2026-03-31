@@ -13,6 +13,8 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 
+app.use(express.static("dist"));
+
 app.use("/auth", authRoutes);
 
 app.listen(3300, () => {

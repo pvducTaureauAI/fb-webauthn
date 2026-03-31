@@ -21,9 +21,18 @@ export default function Login() {
 
       await fetchMe();
     } catch (error: any) {
-      alert("Login failed");
+      alert(error?.message || "Login failed");
     }
   }
+
+  const loginWithPasskeyHandler = async () => {
+    try {
+      await loginWithPasskey(username);
+      await fetchMe();
+    } catch (error: any) {
+      console.error("Passkey login error:", error);
+    }
+  };
 
   if (user) {
     return null;
@@ -53,17 +62,7 @@ export default function Login() {
           />
         </div>
 
-        <button
-          type="button"
-          onClick={async () => {
-            try {
-              await loginWithPasskey(username);
-              await fetchMe();
-            } catch (error) {
-              console.error("Passkey login error:", error);
-            }
-          }}
-        >
+        <button type="button" onClick={loginWithPasskeyHandler}>
           Sign In with Passkey
         </button>
         <button type="submit">Sign In</button>

@@ -1,5 +1,5 @@
 export async function api(url: string, options: RequestInit = {}) {
-  const res = await fetch("/api" + url, {
+  const res = await fetch(import.meta.env.VITE_BASE_URL + url, {
     ...options,
     credentials: "include",
     headers: {
@@ -7,9 +7,11 @@ export async function api(url: string, options: RequestInit = {}) {
       ...(options.headers || {}),
     },
   });
-
+  console.log("API response:", res);
   if (!res.ok) {
-    throw new Error("API error");
+    const errorData = await res.json();
+    console.error("API error data:", errorData);
+    throw new Error(errorData?.message || "API error");
   }
 
   return res.json();

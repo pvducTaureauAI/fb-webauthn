@@ -18,19 +18,24 @@ export async function registerPasskey() {
 }
 
 export const loginWithPasskey = async (username: string) => {
-  const options = await api(
-    "/auth/webauthn/login/options?username=" + encodeURIComponent(username),
-  );
-  console.log("Login options:", options);
-  const assertionResp = await startAuthentication({
-    optionsJSON: options,
-  });
-  console.log("Assertion response:", assertionResp);
+  try {
+    const options = await api(
+      "/auth/webauthn/login/options?username=" + encodeURIComponent(username),
+    );
+    console.log("Login options:", options);
+    const assertionResp = await startAuthentication({
+      optionsJSON: options,
+    });
+    console.log("Assertion response:", assertionResp);
 
-  await api("/auth/webauthn/login/verify", {
-    method: "POST",
-    body: JSON.stringify({ ...assertionResp, username }),
-  });
+    await api("/auth/webauthn/login/verify", {
+      method: "POST",
+      body: JSON.stringify({ ...assertionResp, username }),
+    });
 
-  alert("Passkey login successful!");
+    alert("Passkey login successful!");
+  } catch (error: any) {
+    console.error("Passkey login error:", error);
+    alert(error?.message || "Passkey login failed");
+  }
 };

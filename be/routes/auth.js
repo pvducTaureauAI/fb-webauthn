@@ -12,6 +12,9 @@ import {
 
 const router = express.Router();
 
+// const expectedOrigin = "https://nonrustic-jayse-uncomprehensively.ngrok-free.dev";
+const expectedOrigin = "http://localhost:3300";
+
 const getUserById = async (id) => {
   const [rows] = await db.execute("SELECT * FROM users WHERE id=?", [id]);
 
@@ -74,7 +77,7 @@ router.post("/webauthn/register/verify", auth, async (req, res) => {
     const verification = await verifyRegistrationResponse({
       response: req.body,
       expectedChallenge: currentChallenge,
-      expectedOrigin: "http://localhost:3301",
+      expectedOrigin: expectedOrigin,
       expectedRPID: "localhost",
 
       requireUserVerification: false,
@@ -174,7 +177,7 @@ const verifyLogin = async (req, res) => {
     const verification = await verifyAuthenticationResponse({
       response: body,
       expectedChallenge: currentChallenge,
-      expectedOrigin: "http://localhost:3301",
+      expectedOrigin: expectedOrigin,
       expectedRPID: "localhost",
       credential: {
         id: credentialID,
