@@ -13,7 +13,7 @@ import {
 const router = express.Router();
 
 // const expectedOrigin = "https://nonrustic-jayse-uncomprehensively.ngrok-free.dev";
-const expectedOrigin = "http://localhost:3300";
+const expectedOrigin = process.env.EXPECTED_ORIGIN;
 
 const getUserById = async (id) => {
   const [rows] = await db.execute("SELECT * FROM users WHERE id=?", [id]);

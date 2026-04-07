@@ -2,14 +2,16 @@ import "dotenv/config";
 import express from "express";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.js";
+import cors from "cors";
 
-console.log("ENV CHECK:", {
-  DB_USER: process.env.DB_USER,
-  DB_PASS: process.env.DB_PASS,
-});
+const corsOptions = {
+  origin: process.env.EXPECTED_ORIGIN,
+  credentials: true,
+};
 
 const app = express();
 
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -17,8 +19,8 @@ app.use(express.static("dist"));
 
 app.use("/auth", authRoutes);
 
-app.listen(3300, () => {
-  console.log("Server running");
+app.listen(process.env.PORT, () => {
+  console.log(`Server running on port ${process.env.PORT}`);
 });
 
 global.challengeStore = new Map();
